@@ -1,0 +1,165 @@
+version: 2
+node:
+  master:
+    - name: master
+      Ipv4Address: 172.16.33.11
+      username: $2a$12$umuWoRoZ.ZkG70Upnmt36eFNGh3YT9fmNdcUwM7EoG9Q2xyYyvS7q
+      password: $2a$12$xPzdN88doSKnrKp3jG95reKTJTYO6lIMNqYfmb/K0rVEFOsuZwb5G
+      profile: kube_rsa
+
+  worker:
+    - name: node1
+      Ipv4Address: 172.16.33.12
+      username: $2a$12$tIpFWpa.4gFay9TDlWHC8OREefnsAyenptFVJbPDaCAJx9VgnR9zy
+      password: $2a$12$ndFjdzbVwqCNdrP.jBAXYeF1EydjL8JHJTPk21/yvHfC09CHRsTqe
+      profile: kube_rsa
+
+    - name: node2
+      Ipv4Address: 172.16.33.13
+      username: $2a$12$jVjjeE5/H9L49izGf2rrsusXdral05Y2fDW8PtBI7.2cdnor1wHgq
+      password: $2a$12$wrsJ22c6SIIfG2tYcyWo.uNMzAw.qq7YWy/VuaoL5L4PvMNLBmlbW
+      profile: kube_rsa
+
+profile:
+  - name: kube_rsa
+    port: 22
+    identify_key: ~/.ssh/pub.rsa
+
+namespace:
+  - f5gc
+  - open5gs
+
+service:
+  - name: f5gc-mongodb
+    namespace: f5gc
+    manifest: $mongodb
+    sidecar: tcpdump
+    depends_on:
+      - most_first
+
+  - name: f5gc-nrf
+    namespace: f5gc
+    manifest: $nrf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-mongodb
+
+  - name: f5gc-udr
+    namespace: f5gc
+    manifest: $udr
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-nrf
+
+  - name: f5gc-udm
+    namespace: f5gc
+    manifest: $udm
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-udr
+
+  - name: f5gc-ausf
+    namespace: f5gc
+    manifest: $ausf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-udm
+
+  - name: f5gc-nssf
+    namespace: f5gc
+    manifest: $nssf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-ausf
+
+  - name: f5gc-amf
+    namespace: f5gc
+    manifest: $amf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-nssf
+
+  - name: f5gc-pcf
+    namespace: f5gc
+    manifest: $pcf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-amf
+
+  - name: f5gc-upf
+    namespace: f5gc
+    manifest: $upf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-pcf
+
+  - name: f5gc-smf
+    namespace: f5gc
+    manifest: $smf
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-upf
+
+  - name: f5gc-webui
+    namespace: f5gc
+    manifest: $webui
+    sidecar: webui
+    depends_on:
+      - f5gc-smf
+
+  - name: f5gc-gnb
+    namespace: f5gc
+    manifest: $gnb
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-webui
+
+  - name: f5gc-ue
+    namespace: f5gc
+    manifest: $ue
+    sidecar: tcpdump
+    depends_on:
+      - f5gc-gnb
+
+shell:
+  - name: pods_attach
+    command: "/bin/sh"
+  - target:
+      main: 
+        - MAIN_ALL
+      sidecar: 
+        - SIDECAR_ALL
+
+  - name: mongo_attach
+    command: "/usr/bin/mongo"
+  - target:
+      main: 
+        - f5gc-mongodb
+      sidecar: false
+
+  - name: capture_start
+    command: "bash /tmp/tcpdump.sh start"
+  - target:
+      main: false
+      sidecar: true
+
+  - name: capture_stop
+    command: "bash /tmp/tcpdump.sh stop"
+  - target:
+      main: false
+      sidecar: true
+
+  - name: mongo_register
+    command: mongoexport
+    args: 
+      - "--port 27017"
+      - "--db free5gc"
+      - "--collection NfProfile"
+      - "--type csv"
+      - "--out /home/test.csv"
+      - "--fields nfInstanceId,nfType,nfStatus"
+      - "> /dev/null 2>&1"
+  - target:
+      main: f5gc-mongodb
+      sidecar: false
+

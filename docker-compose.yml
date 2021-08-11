@@ -1,0 +1,10 @@
+version: "3.7"
+
+services:
+    expedition3gpp:
+        image: golang:1.16.1
+        container_name: golang-dev
+        volumes:
+            - "./:/home/ncm/"
+        hostname: golang-dev
+        command: /bin/sh -c "while :; do sleep 10; done"
