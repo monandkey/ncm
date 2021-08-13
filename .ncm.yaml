@@ -1,13 +1,13 @@
 version: 2
 node:
-  master:
+  - master:
     - name: master
       Ipv4Address: 172.16.33.11
       username: $2a$12$umuWoRoZ.ZkG70Upnmt36eFNGh3YT9fmNdcUwM7EoG9Q2xyYyvS7q
       password: $2a$12$xPzdN88doSKnrKp3jG95reKTJTYO6lIMNqYfmb/K0rVEFOsuZwb5G
       profile: kube_rsa
 
-  worker:
+  - worker:
     - name: node1
       Ipv4Address: 172.16.33.12
       username: $2a$12$tIpFWpa.4gFay9TDlWHC8OREefnsAyenptFVJbPDaCAJx9VgnR9zy

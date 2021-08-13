@@ -23,11 +23,15 @@ func init() {
 	nodeCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if nodeConfig.init {
 			userInfo := ncm.UserInfo{}
-			err := userInfo.GetUserInfomation()
+			err := userInfo.InputUserInfomation()
 			if err != nil {
 				return err
 			}
 		}
+
+		c := ncm.SetConfigPath()
+		c.YamlLoadUserInfomation()
+
 		return nil
 	}
 	rootCmd.AddCommand(nodeCmd)
